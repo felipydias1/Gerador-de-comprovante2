@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gerador LD BARBEARIA</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;500;900&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #000;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- ÁREA DE CONTROLE (ONDE VOCÊ DIGITA) --- */
+        .admin-box {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #333;
+            margin-bottom: 40px;
+        }
+        .admin-box h2 { color: #D4AF37; text-align: center; font-family: 'Oswald', sans-serif; margin-top: 0; }
+        
+        input, button { 
+            width: 100%; padding: 12px; margin: 8px 0; 
+            border-radius: 6px; border: 1px solid #444; 
+            background: #222; color: #fff; box-sizing: border-box; 
+        }
+        .btn-add { background: #333; border: 1px dashed #777; cursor: pointer; }
+        .btn-gen { background: #D4AF37; color: #000; font-weight: bold; border: none; text-transform: uppercase; cursor: pointer; font-size: 16px; margin-top: 15px; }
+        
+        .corte-row { display: flex; gap: 5px; }
+        .corte-row button { width: 50px; background: #c00; border: none; }
+
+        /* --- O DESIGN DO COMPROVANTE (CARD) --- */
+        #comprovante {
+            width: 340px; /* Largura padrão de celular */
+            background: linear-gradient(180deg, #121212 0%, #000000 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            display: none; /* Escondido até gerar */
+            border: 1px solid #333;
+        }
+
+        /* Topo com Logo */
+        .header {
+            background: #000;
+            padding: 25px 20px 10px 20px;
+            text-align: center;
+            border-bottom: 2px solid #D4AF37;
+        }
+        
+        /* Logo CSS */
+        .logo-badge {
+            width: 60px; height: 60px;
+            margin: 0 auto 10px auto;
+            border: 2px solid #D4AF37;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #111;
+            color: #D4AF37;
+            font-family: 'Oswald', sans-serif;
+            font-weight: 700;
+            line-height: 1;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+        .logo-txt { font-size: 24px; letter-spacing: -1px; }
+        .logo-sub { font-size: 8px; letter-spacing: 2px; margin-top: 2px; }
+
+        .brand-name { font-family: 'Oswald', sans-serif; font-size: 22px; letter-spacing: 2px; color: #fff; text-transform: uppercase; }
+        .brand-sub { font-size: 10px; color: #888; letter-spacing: 4px; text-transform: uppercase; margin-top: 5px; }
+
+        /* Corpo do Card */
+        .body-card { padding: 20px; }
+
+        /* Status Banner */
+        .status-box {
+            text-align: center; padding: 8px; 
+            font-weight: 900; font-size: 14px; text-transform: uppercase; 
+            border-radius: 4px; margin-bottom: 20px; letter-spacing: 1px;
+        }
+        .st-ativo { background: #D4AF37; color: #000; }
+        .st-expirado { background: #ff0000; color: #fff; box-shadow: 0 0 10px #ff0000; animation: pulse 2s infinite; }
+        .st-concluido { background: #25D366; color: #000; }
+
+        /* Info Cliente */
+        .info-grid { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 3px; }
+        .val { font-size: 14px; font-weight: bold; color: #fff; }
+        .val-date { font-family: 'Oswald', sans-serif; font-size: 16px; color: #D4AF37; }
+
+        .line { height: 1px; background: #333; margin: 15px 0; }
+
+        /* Visual Cortes */
+        .cortes-container {
+            display: flex; justify-content: space-between; align-items: center;
+            margin: 20px 0;
+            padding: 10px; background: #0f0f0f; border-radius: 10px; border: 1px solid #222;
+        }
+        .slot {
+            width: 50px; height: 50px;
+            border-radius: 50%; border: 2px solid #333;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 20px; color: #333; position: relative;
+        }
+        .slot.filled { border-color: #D4AF37; background: rgba(212, 175, 55, 0.1); color: #D4AF37; }
+        .slot-date { font-size: 8px; color: #ccc; position: absolute; bottom: -18px; width: 60px; text-align: center; }
+
+        /* Caixa de Aviso / Regras */
+        .aviso-box {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #550000;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+        .aviso-title { color: #ff5555; font-weight: bold; font-size: 11px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+        .aviso-txt { color: #ccc; font-size: 10px; margin-top: 5px; line-height: 1.4; }
+        .aviso-highlight { color: #fff; font-weight: bold; text-decoration: underline; }
+
+        /* Pix Area */
+        .pix-area { margin-top: 15px; text-align: center; background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px dashed #555; }
+        .pix-label { color: #D4AF37; font-size: 10px; font-weight: bold; }
+        .pix-key { color: #fff; font-size: 15px; font-family: 'Oswald', sans-serif; letter-spacing: 1px; margin-top: 5px; }
+
+        /* Footer */
+        .footer { text-align: center; font-size: 9px; color: #444; padding: 10px; margin-top: 10px; }
+
+        /* Botão Download */
+        .btn-down { background: #fff; color: #000; font-weight: bold; padding: 15px; border: none; width: 340px; margin-top: 20px; cursor: pointer; display: none; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <!-- PAINEL DE CONTROLE -->
+    <div class="admin-box">
+        <h2>Painel LD BARBEARIA</h2>
+        <label>Cliente:</label>
+        <input type="text" id="nome" placeholder="Nome do Cliente">
+        
+        <label>Data Início:</label>
+        <input type="date" id="dataInicio" onchange="calcData()">
+        
+        <label>Vencimento (Auto):</label>
+        <input type="date" id="dataFim" readonly>
+
+        <label>Datas dos Cortes:</label>
+        <div id="listaCortes"></div>
+        <button class="btn-add" onclick="addCorte()">+ Adicionar Data de Corte</button>
+
+        <button class="btn-gen" onclick="gerar()">GERAR COMPROVANTE</button>
+    </div>
+
+    <!-- O DESIGN DO COMPROVANTE -->
+    <div id="comprovante">
+        <div class="header">
+            <div class="logo-badge">
+                <span class="logo-txt">LD</span>
+                <span class="logo-sub">BARBER</span>
+            </div>
+            <div class="brand-name">LD BARBEARIA</div>
+            <div class="brand-sub">Comprovante Digital</div>
+        </div>
+
+        <div class="body-card">
+            <div id="statusBanner" class="status-box st-ativo">PLANO ATIVO</div>
+
+            <div class="info-grid">
+                <div>
+                    <div class="label">CLIENTE</div>
+                    <div class="val" id="cardNome">NOME DO CLIENTE</div>
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div>
+                    <div class="label">DATA INÍCIO</div>
+                    <div class="val" id="cardInicio">00/00/0000</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="label">DATA DE VENCIMENTO</div>
+                    <div class="val-date" id="cardFim">00/00/0000</div>
+                </div>
+            </div>
+
+            <div class="line"></div>
+            <div style="font-size: 10px; color: #888; text-transform: uppercase; text-align: center;">Progresso Mensal</div>
+
+            <!-- Bolinhas -->
+            <div class="cortes-container" id="visualCortes">
+                <!-- Javascript preenche aqui -->
+            </div>
+
+            <!-- ÁREA DE AVISO -->
+            <div class="aviso-box" id="boxAviso">
+                <div class="aviso-title">⚠️ IMPORTANTE - LEIA COM ATENÇÃO</div>
+                <div class="aviso-txt" id="textoRegra">
+                    O plano mensal dá direito a 4 cortes. Estes cortes devem ser utilizados 
+                    até a data de vencimento acima.<br><br>
+                    <span class="aviso-highlight">CORTES NÃO UTILIZADOS NÃO ACUMULAM</span> 
+                    para o próximo mês e serão perdidos após a data limite.
+                </div>
+            </div>
+
+            <div class="pix-area">
+                <div class="pix-label">RENOVAR AGORA / CHAVE PIX</div>
+                <div class="pix-key">13 996466997</div>
+            </div>
+        </div>
+
+        <div class="footer">Gerado por LD Barbearia System</div>
+    </div>
+
+    <button id="btnBaixar" class="btn-down" onclick="baixar()">⬇ BAIXAR IMAGEM</button>
+
+<script>
+    // Inicializar data
+    document.getElementById('dataInicio').valueAsDate = new Date();
+    calcData();
+
+    function calcData() {
+        let inicio = new Date(document.getElementById('dataInicio').value);
+        let fim = new Date(inicio);
+        fim.setMonth(fim.getMonth() + 1);
+        document.getElementById('dataFim').value = fim.toISOString().split('T')[0];
+    }
+
+    function addCorte() {
+        let div = document.createElement('div');
+        div.className = 'corte-row';
+        let input = document.createElement('input');
+        input.type = 'date';
+        input.className = 'input-corte-date';
+        input.valueAsDate = new Date(); 
+        let btn = document.createElement('button');
+        btn.innerText = 'X';
+        btn.onclick = function() { div.remove(); };
+        
+        // Limite de 4
+        if(document.querySelectorAll('.input-corte-date').length >= 4) {
+            alert("Limite de 4 cortes atingido.");
+            return;
+        }
+
+        div.appendChild(input);
+        div.appendChild(btn);
+        document.getElementById('listaCortes').appendChild(div);
+    }
+
+    function gerar() {
+        let nome = document.getElementById('nome').value || "Cliente";
+        let inicio = new Date(document.getElementById('dataInicio').value + 'T00:00:00');
+        let fim = new Date(document.getElementById('dataFim').value + 'T00:00:00');
+        
+        // Lógica de Vencimento
+        let hoje = new Date();
+        hoje.setHours(0,0,0,0);
+        let fimCheck = new Date(fim);
+        fimCheck.setHours(0,0,0,0);
+        
+        let expirado = hoje > fimCheck;
+
+        // Preencher Dados
+        document.getElementById('cardNome').innerText = nome.toUpperCase();
+        document.getElementById('cardInicio').innerText = inicio.toLocaleDateString('pt-BR');
+        document.getElementById('cardFim').innerText = fim.toLocaleDateString('pt-BR');
+
+        // Pegar cortes
+        let cortesInputs = document.querySelectorAll('.input-corte-date');
+        let qtdCortes = cortesInputs.length;
+
+        // Montar Bolinhas
+        let htmlCortes = '';
+        for(let i=0; i<4; i++) {
+            if(i < qtdCortes) {
+                let d = new Date(cortesInputs[i].value + 'T00:00:00');
+                let diaMes = d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+                htmlCortes += `<div class="slot filled">✂️<div class="slot-date">${diaMes}</div></div>`;
+            } else {
+                htmlCortes += `<div class="slot"><div class="slot-date">--/--</div></div>`;
+            }
+        }
+        document.getElementById('visualCortes').innerHTML = htmlCortes;
+
+        // Lógica Visual do Status e Aviso
+        let statusBanner = document.getElementById('statusBanner');
+        let avisoBox = document.getElementById('boxAviso');
+        let textoRegra = document.getElementById('textoRegra');
+
+        if (expirado) {
+            // MODO EXPIRADO
+            statusBanner.className = 'status-box st-expirado';
+            statusBanner.innerText = '⛔ PLANO VENCIDO';
+            
+            avisoBox.style.borderColor = '#ff0000';
+            avisoBox.style.background = 'rgba(255,0,0,0.2)';
+            
+            textoRegra.innerHTML = `<span style="color:#ff5555; font-size:12px; font-weight:bold;">DATA DE VALIDADE EXPIRADA!</span><br>
+            O prazo do seu plano encerrou dia ${fim.toLocaleDateString('pt-BR')}.<br>
+            Mesmo que restem cortes não utilizados, eles foram cancelados conforme regra do plano.`;
+
+        } else if (qtdCortes >= 4) {
+            // MODO CONCLUÍDO
+            statusBanner.className = 'status-box st-concluido';
+            statusBanner.innerText = '✅ PLANO CONCLUÍDO';
+            
+            avisoBox.style.borderColor = '#25D366';
+            avisoBox.style.background = 'rgba(37, 211, 102, 0.1)';
+            
+            textoRegra.innerHTML = `<span style="color:#fff; font-weight:bold;">PARABÉNS!</span> Você utilizou todos os seus cortes.<br>
+            Faça um novo PIX agora mesmo para renovar seu ciclo e continuar no estilo.`;
+
+        } else {
+            // MODO ATIVO
+            statusBanner.className = 'status-box st-ativo';
+            statusBanner.innerText = '🟢 PLANO ATIVO';
+            
+            avisoBox.style.borderColor = '#550000';
+            avisoBox.style.background = 'rgba(255, 0, 0, 0.1)';
+            
+            textoRegra.innerHTML = `Este plano é válido até <span style="color:#D4AF37; font-weight:bold;">${fim.toLocaleDateString('pt-BR')}</span>.<br>
+            Restam <b>${4 - qtdCortes}</b> cortes.<br><br>
+            <span class="aviso-highlight">ATENÇÃO:</span> Se não utilizar os cortes até a data limite, você perderá o direito a eles. Não há reembolso ou acúmulo.`;
+        }
+
+        // Mostrar tudo
+        document.getElementById('comprovante').style.display = 'block';
+        document.getElementById('btnBaixar').style.display = 'block';
+        
+        // Scroll
+        document.getElementById('comprovante').scrollIntoView({behavior: 'smooth'});
+    }
+
+    function baixar() {
+        const area = document.getElementById("comprovante");
+        html2canvas(area, { scale: 3, backgroundColor: null }).then(canvas => {
+            let link = document.createElement('a');
+            link.download = `LD_Barbearia_${document.getElementById('nome').value}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }).catch(err => {
+            alert("Erro ao baixar. Tire um Print Screen da tela.");
+        });
+    }
+</script>
+
+</body>
+</html>
